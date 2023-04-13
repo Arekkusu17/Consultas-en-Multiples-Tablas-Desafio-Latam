@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- CREATE AND INSERT DATASET FOR USERS
 INSERT INTO users(email, name, lastname,rol)
-VALUES ( 'juliastone@dbtest.com', 'Julia', 'Stone','Administrator' );
+VALUES ( 'juliastone@dbtest.com', 'Julia', 'Stone','administrador' );
 INSERT INTO users(email, name, lastname,rol)
 VALUES ('alexanderclarke@dbtest.com','Alexander','Clarke','usuario');
 INSERT INTO users(email, name, lastname,rol)
@@ -72,21 +72,23 @@ VALUES('Comment 5','2023-04-09 11:45:00',2,2);
 
 -- CRUZA LOS DATOS DE LA TABLA USUARIOS Y POSTS MOSTRANDO LAS SIGUIENTES COLUMNAS:
 -- NOMBRE E EMAIL DE USUARIO JUNTO AL TÍTULO Y CONTENIDO DEL POST
-SELECT u.name,u.email,p.title AS post_title,p.content AS post_content FROM users u LEFT JOIN posts p ON u.id=p.user_id;
+SELECT u.name,u.email,p.title AS post_title,p.content AS post_content FROM users u JOIN posts p ON u.id=p.user_id;
+
+
 
 --MUESTRA EL ID,TITULO Y CONTENDIO DE LOS POST DE LOS ADMINISTRADORES, EL ADMINISTRADOR 
 -- PUEDE SER CUALQUIER ID Y DEBES SELECCIONARLO DINAMICAMENTE
 SELECT p.id, p.title, p.content 
 FROM posts p 
 JOIN users u ON p.user_id=u.id 
-WHERE u.rol='Administrator'
+WHERE u.rol='administrador';
 
 -- CUENTA LA CANTIDAD DE POSTS DE CADA USUARIO. LA TABLA RESULTANTE
 --DEBE MOSTRAR EL ID E EMAIL JUNTO CON LA CANTIDAD DE POSTS DE CADA USUARIO
 SELECT u.id,u.email,COUNT(p.id) AS post_qty 
 FROM users u 
 LEFT JOIN posts p ON u.id=p.user_id
-GROUP BY u.id
+GROUP BY u.id,u.email
 ORDER BY u.id ASC; 
 
 -- MUESTRA EL EMAIL DEL USUARIO QUE HA CREADO MÁS POSTS. LA TABLA
@@ -98,17 +100,17 @@ INNER JOIN (
     FROM posts
     GROUP BY user_id
     ORDER BY num_posts DESC 
-    LIMIT 1    
+    LIMIT 1
 ) p ON u.id=p.user_id
 
 -- MUESTRA LA FECHA DEL ÚLTIMO POST DE CADA USUARIO
-SELECT u.email, MAX(p.date_created) as last_post_date
+SELECT u.name, MAX(p.date_created) as last_post_date
 FROM users u
-LEFT JOIN posts p ON u.id=p.user_id
-GROUP BY u.id;
+JOIN posts p ON u.id=p.user_id
+GROUP BY u.name;
 
 -- MUESTRA EL TÍTULO Y CONTENIDO DEL POST CON MÁS COMENTARIOS
-SELECT p.title, p.content
+SELECT p.title, p.content,comment_qty
 FROM posts p 
 INNER JOIN (
     SELECT post_id, COUNT(*) as comment_qty
@@ -121,24 +123,18 @@ INNER JOIN (
 --MUESTRA EN UNA TABLA EL TÍTULO DE CADA POST, EL CONTENIDO DE CADA POST 
 -- Y EL CONTENIDO DE CADA COMENTARIO ASOCIADO A LOS POST MOOSTRADOS, JUNTO
 -- AL EMAIL DEL USUARIO QUE LO ESCRIBIO
-
-SELECT p.title, p.content,c.content, u.email
+SELECT p.title AS post_title, p.content AS post_content,c.content AS comment_content, u.email
 FROM posts p 
-LEFT JOIN comments c ON p.id=c.post_id
-LEFT JOIN users u ON c.user_id=u.id;
+JOIN comments c ON p.id=c.post_id
+JOIN users u ON c.user_id=u.id;
 
 --MUESTRA EL CONTENIDO DEL ULTIMO COMENTARIO DE CADA USUARIO
-SELECT c.content 
-FROM comments c
-INNER JOIN (
-    SELECT user_id,MAX(date_created) AS max_date
-    FROM comments
-    GROUP BY user_id
-) latest_comments ON c.user_id=latest_comments.user_id AND c.date_created=latest_comments.max_date;
+
+SELECT date_created, content, user_id FROM comments as c JOIN users as u ON c.user_id = u.id WHERE c.date_created = (SELECT MAX(date_created) FROM comments WHERE user_id = u.id);
 
 -- MUESTRA LOS EMAILS DE LOS USUARIOS QUE NO TIENEN NINGUN COMENTARIO
 SELECT u.email
 FROM users u 
 LEFT JOIN comments c on u.id=c.user_id
-GROUP BY u.id
+GROUP BY u.email
 HAVING COUNT(c.id)=0;
